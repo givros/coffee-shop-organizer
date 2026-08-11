@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
-    <title>Coffee Shop Organizer</title>
+    <title>{{{ PRODUCT_NAME }}}</title>
     <style>
       :root {
         color-scheme: dark;
@@ -128,7 +128,7 @@
   </head>
   <body>
     <main id="unity-container">
-      <canvas id="unity-canvas" width="1024" height="768" tabindex="0"></canvas>
+      <canvas id="unity-canvas" width={{{ WIDTH }}} height={{{ HEIGHT }}} tabindex="0"></canvas>
       <div id="unity-loading-screen" role="status" aria-live="polite">
         <div class="loading-panel">
           <div class="loading-title">COFFEE SHOP<span>ORGANIZER</span></div>
@@ -162,18 +162,27 @@
       }
 
       const buildUrl = "Build";
-      const loaderUrl = buildUrl + "/docs.loader.js";
+      const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
       const config = {
         arguments: [],
-        dataUrl: buildUrl + "/docs.data.unityweb",
-        frameworkUrl: buildUrl + "/docs.framework.js.unityweb",
-        codeUrl: buildUrl + "/docs.wasm.unityweb",
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_WASM
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "Coffee Shop Organizer",
-        productVersion: "0.1.0",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
         showBanner: unityShowBanner,
       };
+
+#if BACKGROUND_FILENAME
+      canvas.style.background = "url('" + buildUrl + "/{{{ BACKGROUND_FILENAME.replace(/'/g, '%27') }}}') center / cover";
+#endif
 
       canvas.addEventListener("pointerdown", () => canvas.focus());
       canvas.addEventListener("contextmenu", (event) => event.preventDefault());
