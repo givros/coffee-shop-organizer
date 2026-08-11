@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
     <title>Coffee Shop Organizer</title>
     <style>
       :root {
@@ -22,6 +23,10 @@
         height: 100%;
         margin: 0;
         overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
         background: #080604;
       }
 
@@ -30,6 +35,7 @@
         inset: 0;
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
         background: #080604;
       }
 
@@ -39,6 +45,7 @@
         height: 100%;
         border: 0;
         outline: 0;
+        touch-action: none;
         background: #080604;
       }
 
@@ -108,7 +115,7 @@
 
       #unity-warning {
         position: fixed;
-        top: 16px;
+        top: max(16px, env(safe-area-inset-top));
         left: 50%;
         z-index: 20;
         width: min(720px, calc(100vw - 32px));
@@ -123,6 +130,83 @@
         border-left: 4px solid #dc650f;
         background: rgba(18, 12, 8, 0.94);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+
+      #orientation-hint {
+        position: fixed;
+        top: max(12px, env(safe-area-inset-top));
+        left: 50%;
+        z-index: 15;
+        display: none;
+        max-width: calc(100vw - 32px);
+        padding: 8px 14px;
+        transform: translateX(-50%);
+        border: 1px solid rgba(255, 247, 232, 0.38);
+        background: rgba(18, 12, 8, 0.82);
+        color: #fff7e8;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.15em;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .is-touch.is-portrait #orientation-hint:not(.is-dismissed) {
+        display: block;
+      }
+
+      #compatibility-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        place-items: center;
+        padding:
+          max(24px, env(safe-area-inset-top))
+          max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        background: #080604;
+      }
+
+      #compatibility-screen.is-visible {
+        display: grid;
+      }
+
+      .compatibility-card {
+        width: min(520px, 100%);
+        padding: 28px;
+        border: 5px solid #f7e8bf;
+        outline: 3px solid #5f0d09;
+        background: #220704;
+        color: #fff7e8;
+        text-align: center;
+        box-shadow: 12px 16px 0 rgba(0, 0, 0, 0.56);
+      }
+
+      .compatibility-card strong {
+        display: block;
+        margin-bottom: 12px;
+        color: #dc650f;
+        font-size: 22px;
+        letter-spacing: 0.08em;
+      }
+
+      .compatibility-card span {
+        display: block;
+        color: rgba(255, 247, 232, 0.82);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 540px) {
+        .loading-panel {
+          width: calc(100vw - 48px);
+        }
+
+        .loading-title {
+          font-size: 18px;
+        }
       }
     </style>
   </head>
@@ -139,6 +223,13 @@
         </div>
       </div>
       <div id="unity-warning"></div>
+      <div id="orientation-hint">LANDSCAPE RECOMMENDED FOR THE BEST VIEW</div>
+      <div id="compatibility-screen" role="alert">
+        <div class="compatibility-card">
+          <strong>BROWSER NOT SUPPORTED</strong>
+          <span id="compatibility-message">This device cannot start the WebGL version of the game.</span>
+        </div>
+      </div>
     </main>
 
     <script>
@@ -147,6 +238,62 @@
       const progressBar = document.querySelector("#unity-progress");
       const loadingLabel = document.querySelector("#unity-loading-label");
       const warningBanner = document.querySelector("#unity-warning");
+      const compatibilityScreen = document.querySelector("#compatibility-screen");
+      const compatibilityMessage = document.querySelector("#compatibility-message");
+      const orientationHint = document.querySelector("#orientation-hint");
+
+      const touchDevice = (() => {
+        const mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || "");
+        const mobileHint = navigator.userAgentData && navigator.userAgentData.mobile === true;
+        const touchPoints = navigator.maxTouchPoints || navigator.msMaxTouchPoints || 0;
+        const coarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        return mobileUserAgent || mobileHint || touchPoints > 0 || coarsePointer;
+      })();
+
+      let orientationHintTimer = 0;
+      let previousOrientation = "";
+
+      function updateDeviceClasses() {
+        const orientation = window.innerHeight > window.innerWidth ? "portrait" : "landscape";
+        document.documentElement.classList.toggle("is-touch", touchDevice);
+        document.documentElement.classList.toggle("is-portrait", orientation === "portrait");
+
+        if (orientation !== previousOrientation) {
+          previousOrientation = orientation;
+          window.clearTimeout(orientationHintTimer);
+
+          if (touchDevice && orientation === "portrait") {
+            orientationHint.classList.remove("is-dismissed");
+            orientationHintTimer = window.setTimeout(() => {
+              orientationHint.classList.add("is-dismissed");
+            }, 3600);
+          } else {
+            orientationHint.classList.add("is-dismissed");
+          }
+        }
+      }
+
+      function supportsWebGL2() {
+        try {
+          const probe = document.createElement("canvas");
+          return !!probe.getContext("webgl2", { failIfMajorPerformanceCaveat: false });
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function showCompatibilityError(message) {
+        loadingScreen.classList.add("is-hidden");
+        compatibilityMessage.textContent = message;
+        compatibilityScreen.classList.add("is-visible");
+      }
+
+      updateDeviceClasses();
+      window.addEventListener("resize", updateDeviceClasses, { passive: true });
+      window.addEventListener("orientationchange", updateDeviceClasses, { passive: true });
+
+      document.addEventListener("touchmove", (event) => event.preventDefault(), { passive: false });
+      document.addEventListener("gesturestart", (event) => event.preventDefault(), { passive: false });
 
       function unityShowBanner(message, type) {
         const banner = document.createElement("div");
@@ -173,33 +320,44 @@
         productName: "Coffee Shop Organizer",
         productVersion: "0.1.0",
         showBanner: unityShowBanner,
+        matchWebGLToCanvasSize: true,
       };
+
+      const reportedMemory = Number(navigator.deviceMemory || 0);
+      const mobileDprCap = reportedMemory > 0 && reportedMemory <= 4 ? 1.0 : 1.25;
+      config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, touchDevice ? mobileDprCap : 2.0);
 
 
       canvas.addEventListener("pointerdown", () => canvas.focus());
       canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
-      const loaderScript = document.createElement("script");
-      loaderScript.src = loaderUrl;
-      loaderScript.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          const percentage = Math.round(progress * 100);
-          progressBar.style.width = percentage + "%";
-          loadingLabel.textContent = "Loading " + percentage + "%";
-        }).then(() => {
-          loadingScreen.classList.add("is-hidden");
-          canvas.focus();
-        }).catch((message) => {
+      if (typeof WebAssembly !== "object") {
+        showCompatibilityError("WebAssembly is disabled or unavailable. Use a current version of Chrome, Safari, Firefox, or Edge.");
+      } else if (!supportsWebGL2()) {
+        showCompatibilityError("WebGL 2 is unavailable. Enable hardware acceleration or try a newer browser.");
+      } else {
+        const loaderScript = document.createElement("script");
+        loaderScript.src = loaderUrl;
+        loaderScript.onload = () => {
+          createUnityInstance(canvas, config, (progress) => {
+            const percentage = Math.round(progress * 100);
+            progressBar.style.width = percentage + "%";
+            loadingLabel.textContent = "Loading " + percentage + "%";
+          }).then(() => {
+            loadingScreen.classList.add("is-hidden");
+            canvas.focus();
+          }).catch((message) => {
+            loadingLabel.textContent = "Unable to load the game";
+            unityShowBanner(message, "error");
+          });
+        };
+        loaderScript.onerror = () => {
           loadingLabel.textContent = "Unable to load the game";
-          unityShowBanner(message, "error");
-        });
-      };
-      loaderScript.onerror = () => {
-        loadingLabel.textContent = "Unable to load the game";
-        unityShowBanner("The game loader could not be downloaded.", "error");
-      };
+          unityShowBanner("The game loader could not be downloaded.", "error");
+        };
 
-      document.body.appendChild(loaderScript);
+        document.body.appendChild(loaderScript);
+      }
     </script>
   </body>
 </html>

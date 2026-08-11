@@ -397,8 +397,16 @@ namespace CoffeeShop
 
             float widthScale = Mathf.Max(1f, Screen.width) / 1280f;
             float heightScale = Mathf.Max(1f, Screen.height) / 720f;
-            float scale = Mathf.Clamp(Mathf.Min(widthScale, heightScale), minimumScale, maximumScale);
+            float effectiveMinimumScale = PlatformSupport.IsTouchDevice ? 0.6f : minimumScale;
+            float effectiveMaximumScale = PlatformSupport.IsTouchDevice ? 0.86f : maximumScale;
+            float scale = Mathf.Clamp(Mathf.Min(widthScale, heightScale), effectiveMinimumScale, effectiveMaximumScale);
             hudRoot.localScale = Vector3.one * scale;
+
+            Rect safeArea = PlatformSupport.SafeArea;
+            float safeLeft = safeArea.xMin;
+            float safeTop = Mathf.Max(0f, Screen.height - safeArea.yMax);
+            float margin = PlatformSupport.IsTouchDevice ? 16f : hudOffset.x;
+            hudRoot.anchoredPosition = new Vector2(safeLeft + margin, -(safeTop + margin));
         }
 
         private GameObject CreateCenteredLayer(string objectName, Transform parent, Vector2 position, Vector2 size, Color color)

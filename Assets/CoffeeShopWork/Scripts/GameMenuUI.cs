@@ -88,7 +88,7 @@ namespace CoffeeShop
 
         private void Update()
         {
-            if (backgroundRect == null || Mouse.current == null || Screen.width <= 0 || Screen.height <= 0)
+            if (PlatformSupport.IsTouchDevice || backgroundRect == null || Mouse.current == null || Screen.width <= 0 || Screen.height <= 0)
             {
                 return;
             }
@@ -764,7 +764,9 @@ namespace CoffeeShop
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            targetScale = Vector3.one * hoverScale;
+            targetScale = PlatformSupport.IsTouchDevice
+                ? Vector3.one
+                : Vector3.one * hoverScale;
         }
     }
 }

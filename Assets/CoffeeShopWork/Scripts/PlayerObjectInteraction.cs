@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -32,8 +31,11 @@ namespace CoffeeShop
         private Quaternion ghostRotation;
         private bool ghostSurfaceValid;
         private bool interactionEnabled = true;
+        private readonly RaycastHit[] raycastBuffer = new RaycastHit[64];
+        private uint lastMobileActionVersion;
 
         public bool InteractionEnabled => interactionEnabled;
+        public bool IsHoldingObject => heldObject != null;
 
         private void Awake()
         {
@@ -54,8 +56,7 @@ namespace CoffeeShop
             {
                 UpdateAimedObject();
 
-                Mouse mouse = Mouse.current;
-                if (aimedObject != null && mouse != null && mouse.leftButton.wasPressedThisFrame)
+                if (aimedObject != null && WasPrimaryActionPressed())
                 {
                     PickUp(aimedObject);
                 }
@@ -67,8 +68,7 @@ namespace CoffeeShop
             ClearAimedObject();
             UpdatePlacementGhost();
 
-            Mouse placementMouse = Mouse.current;
-            if (placementMouse != null && placementMouse.leftButton.wasPressedThisFrame)
+            if (WasPrimaryActionPressed())
             {
                 PlaceOrDropHeldObject();
             }
@@ -111,16 +111,17 @@ namespace CoffeeShop
             }
 
             Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            RaycastHit[] hits = Physics.RaycastAll(
+            int hitCount = Physics.RaycastNonAlloc(
                 ray,
+                raycastBuffer,
                 pickupRayDistance,
                 interactionMask,
                 QueryTriggerInteraction.Ignore);
 
-            Array.Sort(hits, CompareHitDistance);
-            for (int i = 0; i < hits.Length; i++)
+            SortHitsByDistance(raycastBuffer, hitCount);
+            for (int i = 0; i < hitCount; i++)
             {
-                PlaceableObject candidate = hits[i].collider.GetComponentInParent<PlaceableObject>();
+                PlaceableObject candidate = raycastBuffer[i].collider.GetComponentInParent<PlaceableObject>();
                 if (candidate != null &&
                     !StaticSceneAssetRegistry.IsExcluded(candidate.gameObject) &&
                     candidate.CanBePickedUp)
@@ -251,16 +252,17 @@ namespace CoffeeShop
             }
 
             Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            RaycastHit[] hits = Physics.RaycastAll(
+            int hitCount = Physics.RaycastNonAlloc(
                 ray,
+                raycastBuffer,
                 placementRayDistance,
                 interactionMask,
                 QueryTriggerInteraction.Ignore);
 
-            Array.Sort(hits, CompareHitDistance);
-            for (int i = 0; i < hits.Length; i++)
+            SortHitsByDistance(raycastBuffer, hitCount);
+            for (int i = 0; i < hitCount; i++)
             {
-                Collider candidateCollider = hits[i].collider;
+                Collider candidateCollider = raycastBuffer[i].collider;
                 if (candidateCollider == null || IsPlayerCollider(candidateCollider))
                 {
                     continue;
@@ -271,12 +273,12 @@ namespace CoffeeShop
                     continue;
                 }
 
-                if (Vector3.Dot(hits[i].normal, Vector3.up) < minimumSurfaceUp)
+                if (Vector3.Dot(raycastBuffer[i].normal, Vector3.up) < minimumSurfaceUp)
                 {
                     continue;
                 }
 
-                surfaceHit = hits[i];
+                surfaceHit = raycastBuffer[i];
                 return true;
             }
 
@@ -319,22 +321,23 @@ namespace CoffeeShop
         private Vector3 FindDropPosition()
         {
             Vector3 rayStart = transform.position + Vector3.up * 5f;
-            RaycastHit[] hits = Physics.RaycastAll(
+            int hitCount = Physics.RaycastNonAlloc(
                 rayStart,
                 Vector3.down,
+                raycastBuffer,
                 20f,
                 interactionMask,
                 QueryTriggerInteraction.Ignore);
 
-            Array.Sort(hits, CompareHitDistance);
-            for (int i = 0; i < hits.Length; i++)
+            SortHitsByDistance(raycastBuffer, hitCount);
+            for (int i = 0; i < hitCount; i++)
             {
-                if (hits[i].collider == null || IsPlayerCollider(hits[i].collider))
+                if (raycastBuffer[i].collider == null || IsPlayerCollider(raycastBuffer[i].collider))
                 {
                     continue;
                 }
 
-                return heldObject.GetSurfacePlacementPosition(hits[i].point, Vector3.up);
+                return heldObject.GetSurfacePlacementPosition(raycastBuffer[i].point, Vector3.up);
             }
 
             Vector3 fallback = transform.position + transform.forward * 0.75f;
@@ -426,9 +429,31 @@ namespace CoffeeShop
             }
         }
 
-        private static int CompareHitDistance(RaycastHit first, RaycastHit second)
+        private bool WasPrimaryActionPressed()
         {
-            return first.distance.CompareTo(second.distance);
+            if (MobileControlsUI.IsTouchControlsActive)
+            {
+                return MobileControlsUI.ReadActionPress(ref lastMobileActionVersion);
+            }
+
+            Mouse mouse = Mouse.current;
+            return mouse != null && mouse.leftButton.wasPressedThisFrame;
+        }
+
+        private static void SortHitsByDistance(RaycastHit[] hits, int hitCount)
+        {
+            for (int index = 1; index < hitCount; index++)
+            {
+                RaycastHit current = hits[index];
+                int previousIndex = index - 1;
+                while (previousIndex >= 0 && hits[previousIndex].distance > current.distance)
+                {
+                    hits[previousIndex + 1] = hits[previousIndex];
+                    previousIndex--;
+                }
+
+                hits[previousIndex + 1] = current;
+            }
         }
 
         private void OnDisable()

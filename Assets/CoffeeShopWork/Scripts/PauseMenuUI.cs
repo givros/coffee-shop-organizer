@@ -31,6 +31,7 @@ namespace CoffeeShop
         private Button restartButton;
         private FirstPersonPlayerController playerController;
         private PlayerObjectInteraction playerInteraction;
+        private uint lastMobilePauseVersion;
         private static Sprite whiteSprite;
 
         public bool IsOpen => pauseRoot != null && pauseRoot.activeSelf;
@@ -46,7 +47,9 @@ namespace CoffeeShop
         private void Update()
         {
             Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            bool keyboardPressed = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+            bool mobilePressed = MobileControlsUI.ReadPausePress(ref lastMobilePauseVersion);
+            if (keyboardPressed || mobilePressed)
             {
                 TogglePause();
             }
@@ -430,6 +433,8 @@ namespace CoffeeShop
             {
                 playerInteraction.SetInteractionEnabled(enabled);
             }
+
+            MobileControlsUI.SetGameplayControlsVisible(enabled);
         }
 
         private void PrepareForSceneChange()
@@ -443,6 +448,8 @@ namespace CoffeeShop
             {
                 playerInteraction.SetInteractionEnabled(false);
             }
+
+            MobileControlsUI.HideAllControls();
         }
 
         private void OnDestroy()

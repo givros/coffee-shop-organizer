@@ -29,12 +29,11 @@ namespace CoffeeShop
         private readonly List<Material> shellMaterials = new List<Material>();
         private MaterialPropertyBlock propertyBlock;
         private Color currentColor = Color.white;
+        private bool shellsBuilt;
 
         private void Awake()
         {
             propertyBlock = new MaterialPropertyBlock();
-            BuildShells();
-            SetVisible(false);
         }
 
         public static bool IsGeneratedShell(Renderer renderer)
@@ -77,6 +76,11 @@ namespace CoffeeShop
 
         public void SetVisible(bool visible)
         {
+            if (visible)
+            {
+                EnsureShellsBuilt();
+            }
+
             for (int i = 0; i < shellRenderers.Count; i++)
             {
                 if (shellRenderers[i] != null)
@@ -180,6 +184,16 @@ namespace CoffeeShop
             }
 
             SetColor(currentColor);
+            shellsBuilt = true;
+            SetVisible(false);
+        }
+
+        private void EnsureShellsBuilt()
+        {
+            if (!shellsBuilt)
+            {
+                BuildShells();
+            }
         }
 
         private void RemoveExistingShells()

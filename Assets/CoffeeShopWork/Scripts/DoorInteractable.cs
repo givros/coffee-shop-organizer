@@ -34,6 +34,7 @@ namespace CoffeeShop
         private bool isOpening;
         private bool isOpen;
         private bool isFrameHighlighted;
+        private uint lastMobileActionVersion;
 
         private void Awake()
         {
@@ -62,8 +63,7 @@ private void Update()
 
             SetFrameHighlighted(isTargeted);
 
-            Mouse mouse = Mouse.current;
-            if (isTargeted && mouse != null && mouse.leftButton.wasPressedThisFrame)
+            if (isTargeted && WasPrimaryActionPressed())
             {
                 StartOpening();
             }
@@ -267,6 +267,17 @@ private void ResolveReferences()
                 propertyBlock.SetColor(EmissionColorId, frameHighlightColor * emissionIntensity);
                 frameRenderer.SetPropertyBlock(propertyBlock);
             }
+        }
+
+        private bool WasPrimaryActionPressed()
+        {
+            if (MobileControlsUI.IsTouchControlsActive)
+            {
+                return MobileControlsUI.ReadActionPress(ref lastMobileActionVersion);
+            }
+
+            Mouse mouse = Mouse.current;
+            return mouse != null && mouse.leftButton.wasPressedThisFrame;
         }
 
         private void OnDisable()

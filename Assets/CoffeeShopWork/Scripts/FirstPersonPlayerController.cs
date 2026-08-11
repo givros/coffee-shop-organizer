@@ -14,6 +14,7 @@ namespace CoffeeShop
 
         [Header("Look")]
         [SerializeField, Min(0f)] private float lookSensitivity = 0.08f;
+        [SerializeField, Min(0f)] private float touchLookSensitivity = 0.14f;
         [SerializeField, Range(1f, 89f)] private float maxLookAngle = 85f;
         [SerializeField] private bool lockCursorOnStart = true;
 
@@ -50,9 +51,14 @@ namespace CoffeeShop
 
         private void Start()
         {
-            if (lockCursorOnStart)
+            if (lockCursorOnStart && !PlatformSupport.IsTouchDevice)
             {
                 LockCursor();
+            }
+            else if (PlatformSupport.IsTouchDevice)
+            {
+                UnlockCursor();
+                Cursor.visible = false;
             }
         }
 
@@ -72,6 +78,19 @@ namespace CoffeeShop
             Keyboard keyboard = Keyboard.current;
             Mouse mouse = Mouse.current;
 
+            if (PlatformSupport.IsTouchDevice)
+            {
+                if (cursorLocked)
+                {
+                    UnlockCursor();
+                }
+
+                Cursor.visible = false;
+                HandleLookDelta(MobileControlsUI.ConsumeLookDelta(), touchLookSensitivity);
+                HandleMovement(keyboard, MobileControlsUI.MoveInput);
+                return;
+            }
+
             if (!cursorLocked && mouse != null && mouse.leftButton.wasPressedThisFrame)
             {
                 LockCursor();
@@ -82,26 +101,30 @@ namespace CoffeeShop
                 HandleLook(mouse);
             }
 
-            HandleMovement(keyboard);
+            HandleMovement(keyboard, Vector2.zero);
         }
 
         public void SetGameplayInputEnabled(bool enabled)
         {
             gameplayInputEnabled = enabled;
 
-            if (enabled)
+            if (enabled && !PlatformSupport.IsTouchDevice)
             {
                 LockCursor();
             }
             else
             {
                 UnlockCursor();
+                if (PlatformSupport.IsTouchDevice)
+                {
+                    Cursor.visible = false;
+                }
             }
         }
 
-        private void HandleMovement(Keyboard keyboard)
+        private void HandleMovement(Keyboard keyboard, Vector2 additionalInput)
         {
-            Vector2 moveInput = Vector2.zero;
+            Vector2 moveInput = additionalInput;
 
             if (keyboard != null)
             {
@@ -150,11 +173,20 @@ namespace CoffeeShop
             }
 
             Vector2 lookDelta = mouse.delta.ReadValue();
+            HandleLookDelta(lookDelta, lookSensitivity);
+        }
 
-            transform.Rotate(Vector3.up, lookDelta.x * lookSensitivity);
+        private void HandleLookDelta(Vector2 lookDelta, float sensitivity)
+        {
+            if (playerCamera == null || lookDelta.sqrMagnitude <= 0f)
+            {
+                return;
+            }
+
+            transform.Rotate(Vector3.up, lookDelta.x * sensitivity);
 
             cameraPitch = Mathf.Clamp(
-                cameraPitch - lookDelta.y * lookSensitivity,
+                cameraPitch - lookDelta.y * sensitivity,
                 -maxLookAngle,
                 maxLookAngle);
 

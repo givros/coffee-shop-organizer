@@ -49,6 +49,7 @@ namespace CoffeeShop
 
         private Collider[] colliders;
         private Rigidbody[] rigidbodies;
+        private Renderer[] cachedRenderers;
         private Coroutine feedbackRoutine;
         private bool isHeld;
         private bool feedbackActive;
@@ -72,6 +73,7 @@ namespace CoffeeShop
 
             colliders = GetComponentsInChildren<Collider>(true);
             rigidbodies = GetComponentsInChildren<Rigidbody>(true);
+            cachedRenderers = GetComponentsInChildren<Renderer>(true);
 
             if (savedScale == Vector3.zero)
             {
@@ -236,10 +238,9 @@ namespace CoffeeShop
             float minimumProjection = float.MaxValue;
             bool foundBounds = false;
 
-            Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
+            for (int i = 0; i < cachedRenderers.Length; i++)
             {
-                Renderer renderer = renderers[i];
+                Renderer renderer = cachedRenderers[i];
                 if (renderer == null || OutlineVisualizer.IsGeneratedShell(renderer))
                 {
                     continue;
