@@ -31,6 +31,9 @@ namespace CoffeeShop
         private Vector3 ghostPosition;
         private Quaternion ghostRotation;
         private bool ghostSurfaceValid;
+        private bool interactionEnabled = true;
+
+        public bool InteractionEnabled => interactionEnabled;
 
         private void Awake()
         {
@@ -40,6 +43,13 @@ namespace CoffeeShop
 
         private void Update()
         {
+            if (!interactionEnabled ||
+                (GameSessionManager.Instance != null && GameSessionManager.Instance.IsPaused))
+            {
+                ClearAimedObject();
+                return;
+            }
+
             if (heldObject == null)
             {
                 UpdateAimedObject();
@@ -61,6 +71,16 @@ namespace CoffeeShop
             if (placementMouse != null && placementMouse.leftButton.wasPressedThisFrame)
             {
                 PlaceOrDropHeldObject();
+            }
+        }
+
+        public void SetInteractionEnabled(bool enabled)
+        {
+            interactionEnabled = enabled;
+
+            if (!enabled)
+            {
+                ClearAimedObject();
             }
         }
 

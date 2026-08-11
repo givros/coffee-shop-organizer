@@ -21,6 +21,10 @@ namespace CoffeeShop
         private float verticalVelocity;
         private float cameraPitch;
         private bool cursorLocked;
+        private bool gameplayInputEnabled = true;
+
+        public bool GameplayInputEnabled => gameplayInputEnabled;
+        public bool IsCursorLocked => cursorLocked;
 
         private void Awake()
         {
@@ -54,14 +58,21 @@ namespace CoffeeShop
 
         private void Update()
         {
+            if (!gameplayInputEnabled ||
+                (GameSessionManager.Instance != null && GameSessionManager.Instance.IsPaused))
+            {
+                if (cursorLocked)
+                {
+                    UnlockCursor();
+                }
+
+                return;
+            }
+
             Keyboard keyboard = Keyboard.current;
             Mouse mouse = Mouse.current;
 
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-            {
-                UnlockCursor();
-            }
-            else if (!cursorLocked && mouse != null && mouse.leftButton.wasPressedThisFrame)
+            if (!cursorLocked && mouse != null && mouse.leftButton.wasPressedThisFrame)
             {
                 LockCursor();
             }
@@ -72,6 +83,20 @@ namespace CoffeeShop
             }
 
             HandleMovement(keyboard);
+        }
+
+        public void SetGameplayInputEnabled(bool enabled)
+        {
+            gameplayInputEnabled = enabled;
+
+            if (enabled)
+            {
+                LockCursor();
+            }
+            else
+            {
+                UnlockCursor();
+            }
         }
 
         private void HandleMovement(Keyboard keyboard)

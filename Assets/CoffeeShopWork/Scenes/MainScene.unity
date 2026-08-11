@@ -15801,6 +15801,7 @@ GameObject:
   - component: {fileID: 977977176}
   - component: {fileID: 977977175}
   - component: {fileID: 977977178}
+  - component: {fileID: 977977179}
   m_Layer: 0
   m_Name: GameplayUI
   m_TagString: Untagged
@@ -15854,6 +15855,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CoffeeShop.GameSessionManager
   targetTimeSeconds: 180
+--- !u!114 &977977179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 977977174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e9c8a4c2da3e724d823ce0483afea1c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CoffeeShop.PauseMenuUI
 --- !u!1 &983537199
 GameObject:
   m_ObjectHideFlags: 0

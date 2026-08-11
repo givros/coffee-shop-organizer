@@ -128,7 +128,7 @@
   </head>
   <body>
     <main id="unity-container">
-      <canvas id="unity-canvas" width="1024" height="768" tabindex="0"></canvas>
+      <canvas id="unity-canvas" width=960 height=600 tabindex="0"></canvas>
       <div id="unity-loading-screen" role="status" aria-live="polite">
         <div class="loading-panel">
           <div class="loading-title">COFFEE SHOP<span>ORGANIZER</span></div>
@@ -162,18 +162,19 @@
       }
 
       const buildUrl = "Build";
-      const loaderUrl = buildUrl + "/docs.loader.js";
+      const loaderUrl = buildUrl + "/WebGLBuild.loader.js";
       const config = {
         arguments: [],
-        dataUrl: buildUrl + "/docs.data.unityweb",
-        frameworkUrl: buildUrl + "/docs.framework.js.unityweb",
-        codeUrl: buildUrl + "/docs.wasm.unityweb",
+        dataUrl: buildUrl + "/WebGLBuild.data.unityweb",
+        frameworkUrl: buildUrl + "/WebGLBuild.framework.js.unityweb",
+        codeUrl: buildUrl + "/WebGLBuild.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Coffee Shop Organizer",
         productVersion: "0.1.0",
         showBanner: unityShowBanner,
       };
+
 
       canvas.addEventListener("pointerdown", () => canvas.focus());
       canvas.addEventListener("contextmenu", (event) => event.preventDefault());

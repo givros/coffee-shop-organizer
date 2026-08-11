@@ -51,6 +51,12 @@ private void Update()
                 UpdateDoorAnimation();
             }
 
+            if (GameSessionManager.Instance != null && GameSessionManager.Instance.IsPaused)
+            {
+                SetFrameHighlighted(false);
+                return;
+            }
+
             bool canInteract = IsPlayerClose();
             bool isTargeted = canInteract && IsTargeted();
 

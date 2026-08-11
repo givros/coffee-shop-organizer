@@ -25,6 +25,7 @@ namespace CoffeeShop
 
         public bool IsGameRunning { get; private set; }
         public bool HasFinished { get; private set; }
+        public bool IsPaused { get; private set; }
         public bool RequiresSceneRestart { get; private set; }
         public float ElapsedSeconds { get; private set; }
         public float LastGameSeconds { get; private set; }
@@ -67,7 +68,7 @@ namespace CoffeeShop
 
         private void Update()
         {
-            if (!IsGameRunning)
+            if (!IsGameRunning || IsPaused)
             {
                 return;
             }
@@ -94,7 +95,32 @@ namespace CoffeeShop
             LastCompletedObjectCount = 0;
             LastTargetObjectCount = targetObjectCount;
             HasFinished = false;
+            IsPaused = false;
             IsGameRunning = true;
+            Time.timeScale = 1f;
+            StateChanged?.Invoke();
+        }
+
+        public void PauseGame()
+        {
+            if (!IsGameRunning || HasFinished || IsPaused)
+            {
+                return;
+            }
+
+            IsPaused = true;
+            Time.timeScale = 0f;
+            StateChanged?.Invoke();
+        }
+
+        public void ResumeGame()
+        {
+            if (!IsPaused)
+            {
+                return;
+            }
+
+            IsPaused = false;
             Time.timeScale = 1f;
             StateChanged?.Invoke();
         }
@@ -103,6 +129,7 @@ namespace CoffeeShop
         {
             IsGameRunning = false;
             HasFinished = false;
+            IsPaused = false;
             Time.timeScale = 1f;
             StateChanged?.Invoke();
             SceneManager.LoadScene(MenuSceneName);
@@ -117,6 +144,7 @@ namespace CoffeeShop
 
             IsGameRunning = false;
             HasFinished = true;
+            IsPaused = false;
             RequiresSceneRestart = true;
             LastGameSeconds = ElapsedSeconds;
             LastCompletedObjectCount = PlaceableObject.CompletedObjectCount;
@@ -137,6 +165,7 @@ namespace CoffeeShop
 
         public void RestartCurrentScene()
         {
+            IsPaused = false;
             Time.timeScale = 1f;
             string scenePath = SceneManager.GetActiveScene().path;
             SceneManager.LoadScene(scenePath);
@@ -162,6 +191,7 @@ namespace CoffeeShop
         {
             if (Instance == this)
             {
+                Time.timeScale = 1f;
                 Instance = null;
             }
         }
